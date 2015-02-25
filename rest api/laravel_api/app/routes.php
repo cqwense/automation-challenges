@@ -18,9 +18,8 @@ Route::get('/', function()
 
 Route::get('words', 'WordController@index');
 Route::get('words/{entry}', 'WordController@show');
-Route::match(['put', 'post'], 'words/{entry?}', 'WordController@put');
-#Route::put('words/{entry?}', 'WordController@put');
-#Route::post('words/{entry?}', 'WordController@put');
+Route::put('words/{entry?}', 'WordController@put');
+Route::post('words/{entry?}', 'WordController@post');
 
 #Route::resource('words', 'WordController');
 

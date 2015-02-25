@@ -36,31 +36,59 @@ class WordController extends \BaseController {
 # for specific PUT requests and grabs the data from BODY via URLEncoding
 # and/or a hidden '_metho' = 'PUT' defined in an HTML form.
 
+    # client says put requests mean "word" is in body via JSON:
     public function put()
     {
-        $data = Input::all();
-        if(isset($data['word']) && !empty($data['word']) && str_word_count($data['word']) == 1)
+        $data = Input::json()->all();
+    
+        #laravel has validation tools - I don't know them yet.
+        if(isset($data['word'])  && 
+           !empty($data['word']) && 
+           str_word_count($data['word']) == 1 &&
+           !is_int($data['word']))
         {
 
             $id = $this->searchFor($data['word']);
 
             if($id)
-            {
                 return $this->show($this->store($id));
-            }
             else
-            {
                 return $this->show($this->create($data['word']));
-            }
         }
         else
         {
             return Response::json(array(
-                'error' => 'PUT data must include JSON word value with exactly 1 word'));
+                'error' => 'PUT requests must be one word in length'));
         }
 
     }
 
+    # clean this up later - lil redundant, but for now its already above and
+    # beyond - but this takes care of POST data
+    public function post()
+    {
+        $data = Input::all();
+
+        if(isset($data['word'])  && 
+           !empty($data['word']) && 
+           str_word_count($data['word']) == 1 &&
+           !is_int($data['word']))
+        {
+
+            $id = $this->searchFor($data['word']);
+
+            if($id)
+                return $this->show($this->store($id));
+            else
+                return $this->show($this->create($data['word']));
+        }
+        else
+        {
+            return Response::json(array(
+                'error' => 'POST requests must be one word in length'));
+        }
+
+    }
     public function searchFor($check)
     {
         $word =  Word::where('word', '=', $check)->first();
@@ -71,10 +99,7 @@ class WordController extends \BaseController {
             $return = $word->toArray();
             return $return['id'];
         }
-        else 
-        { 
-            return 0;
-        }
+        else return 0;
     }
         
 
@@ -170,12 +195,8 @@ class WordController extends \BaseController {
 	 */
 	public function update($id)
 	{
-		$word = Word::find($id);
-        $word->count++;
-        $word->save;
-        
-        return "Word " . $entry . " has been sent " . $word->count . " times";
-	}
+	
+    }
 
 
 	/**
