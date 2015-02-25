@@ -29,6 +29,7 @@ $lines = file('./puppet_access_ssl.log',
 
 # Since we're reporting and not just outputting we'll
 # create some variables/arrays to hold values for us later.
+# in the long wrong these would become subclass models.
 
 $sshd = array();
 $sshd['Access'] = 0;
@@ -38,12 +39,10 @@ $not200 = array();
 $not200['count'] = 0;
 
 $putUnderReport = array();
-# declare via IP address dynamically later
-
 
 # Now we iterate through the lines of our object, checking for 
 # requested information and populating our report variables/arrays
-# We could later expand this to be a sub-class object.
+# We could later expand thess to be a subclass methods.
 foreach ($lines as $line)
 { 
 	# creates a parsed line object
@@ -55,29 +54,22 @@ foreach ($lines as $line)
 	{ 
 		$sshd['Access']++;
 		if ($entry->status != 200)
-		{
 			$sshd['not200']++;
-		}
 	}
 	
 	# Easy-Peasy status check for "not status 200 request"
 	if( $entry->status != 200)
-	{
 		$not200['count']++;
-	}
 
 	# REGEX! - find PUT calls under the /dev/report directory
 	$underReportString = "PUT\ \/dev\/report\/";
 	if(preg_match("/^$underReportString/", $entry->request))
-	{
-		# I dynamically delcare my variables - wanna fight about it ? 
 		@$putUnderReport["$entry->host"]++ ;
-	}
 }
 
 # putting echo's in here for now - I make things work, making them
 # pretty comes later.  This is personal preference, and I find
-# it keeps me from having to dev too many http pages. 
+# it keeps me from having to dev too many http/css pages. 
 
 echo "sshd_config was accessed " . $sshd['Access'] . " times\n";
 echo "of those " . $sshd['not200'] . " did not result in a 200 status code.\n";
@@ -95,4 +87,5 @@ foreach($putUnderReport as $ip => $count)
 {
 	echo $count . " - " . $ip ."\n";
 }
+
 ?>

@@ -35,7 +35,7 @@ fi
 # variablize the file, because reasons.
 CONTENTS=$( < "$FILE" )
 
-#2) Some assumed commands from $PATH - if not found we report and exit
+# 2) Some assumed commands from $PATH - if not found we report and exit
 
 which ssh > /dev/null 2>/dev/null
 if [ $? -ne 0 ]
@@ -81,7 +81,7 @@ do
 	# or it could be an empty value ( widget option not set ).  This 
 	# is the reason we make two connections via ssh - this can later be 
 	# streamlined into one connection with a longer commaned past 
-	# to the remote system.
+	# to the remote system. But I have other code to write.
 
 	if [ $? -eq 0 ] 
 	then
@@ -130,7 +130,7 @@ do
 	fi
 done
 
-# Meat and Potatoes are done - now for each of the PASS and FAIL 
+# 4) Meat and Potatoes are done - now for each of the PASS and FAIL 
 # arrays, we echo the count/total - and just for kicks
 # we also list the hostnames of each passed and failed.
 
