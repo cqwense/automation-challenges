@@ -13,7 +13,7 @@ Coder-Notes
   * probably the easiest of the requests, not just in scope but because borrowing existing modules makes for ezmode.  I took my normal route of POC 'script' style functionality - but written and commented in a way that would make it easy to convert the logic to a subclass of the log-parser-master class.
 
 * rest api
-  * I'd already demonstrated top-to-bottom scripting, and simple object/model php examples, so I went a little overkill using laravel here to demonstrate pure object-oriented/MVC-architecture understanding here - In addition any project that starts as a "simple rest" is destined to scale, and having a framework in place will make a lot of tedius stuff simpler later (actual HTML integration, multiple models, client requests etc )
+  * I'd already demonstrated top-to-bottom scripting, and simple object/model php examples, so I went a little overkill using laravel here to demonstrate pure object-oriented/MVC-architecture understanding - In addition any project that starts as a "simple rest" is destined to scale, and having a framework in place will make a lot of tedius stuff simpler later (actual HTML integration, multiple models, client requests etc )
 
 Instructions
 ============
