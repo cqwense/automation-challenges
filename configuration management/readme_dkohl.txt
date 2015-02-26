@@ -1,3 +1,3 @@
-current ran via
+Hostnames on which to deploy as passed as arguments to the deploy.sh script
 
-~ # ./sh deploy.sh
+~ # ./sh deploy.sh host1 host2 host3 ... 
