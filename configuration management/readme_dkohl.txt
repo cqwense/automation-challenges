@@ -1,3 +1,3 @@
-Hostnames on which to deploy as passed as arguments to the deploy.sh script
+Hostnames on which to deploy are passed as arguments to the deploy.sh script
 
 ~ # ./sh deploy.sh host1 host2 host3 ... 
