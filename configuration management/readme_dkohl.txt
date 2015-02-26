@@ -1,3 +1,3 @@
-Hostnames on which to deploy are passed as arguments to the deploy.sh script
+deploy.sh now includes an included help option:
 
-~ # ./sh deploy.sh host1 host2 host3 ... 
+./deploy.sh -h 

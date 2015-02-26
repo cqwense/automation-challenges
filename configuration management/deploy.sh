@@ -20,40 +20,177 @@
 # 1) we assume template file is in the same directory as deploy.sh, if not 
 #    found we exit.  This can be expanded later.
 
-TEMPLATE="template.file"
-HOMEDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-FILE="$HOMEDIR/$TEMPLATE"
+function USAGE()
+{
+cat << ENDOFHELP
+Usage:
+-------
 
-if [ ! -r "$FILE" ]
+deploy.sh 
+  -H "host1 host2 host3"
+  -u USERNAME
+  -c "COMMAND"
+  -b "TEXT"
+  -a "TEXT"
+  -f FILE
+  -r "TEXT"
+  -o PATH/FILE
+
+-H : Required : Hosts which to deploy too
+-u : Optional : ssh username to use, defaults to current username
+
+-c : Required : Command string to execute on remote machine 
+		who's output will be used to replace the string
+		specified by -r.
+-b : Optional : Any text desired to be prepended to output from -c.
+-a : Optional : Any text desired to be appened to output from -c.
+
+-f : Required : /path/to/file to use as template.
+-r : Required : String in -f to be replaced by -c -b -a.
+
+-o : Optional : Filepath on remote server to place new file
+		default is ~/widgetfile
+
+Ex:
+
+./deploy.sh -H "localhost" -f template.file -o "/etc/widgetfile" \
+-c "facter -p widget" -r "widget_type X" -b "widget_type " -u root
+ENDOFHELP
+
+exit 1
+}
+
+while getopts ":H:u:f:o:c:r:b:a:h" opt; do
+	case $opt in 
+		H)
+		HOSTNAMES="$OPTARG"
+		;;
+
+		u)
+		SSHUSER="$OPTARG"
+		;;
+
+		c)
+		REMOTECMD="$OPTARG"
+		;;
+
+		f)
+		if [ ! -r "$OPTARG" ]
+		then
+		{
+			echo "Failed to read template file - exiting."
+			exit 1
+		}
+		fi
+		CONTENTS=$( < "$OPTARG" ) >&2
+		;;
+
+		o)
+		OUTPATH="$OPTARG"
+		;;
+
+		r)
+		OLD="$OPTARG"
+		;;
+
+		b)
+		BEFORE="$OPTARG"
+		;;
+
+		a)
+		AFTER="$OPTARG"
+		;;
+
+		h)
+		USAGE
+		;;
+
+		\?)
+		echo "Invalid option -$OPTARG" >&2
+		exit 1
+		;;
+
+		:)
+		echo "Option -$OPTARG requires an argument."
+		;;
+	esac
+done
+
+# Make sure we got required info
+if [ -z "${HOSTNAMES}" ]
 then
 {
-	echo "Failed to read template file - exiting"
+	echo "Not given any hostnames - exiting."
 	exit 1
 }
 fi
 
-# variablize the file, because reasons.
-CONTENTS=$( < "$FILE" )
-
-# 2) Some assumed commands from $PATH - if not found we report and exit
-
-which ssh > /dev/null 2>/dev/null
-if [ $? -ne 0 ]
+if [ -z "${CONTENTS}" ]
 then
-{ 
-	echo "ssh executable not in path - exiting"
+{
+	echo "Read no data from template file specified - exiting."
 	exit 1
 }
 fi
 
-# set the remote command to get our replacement line
-REMOTECMD="facter -p widget"
+if [ -z "${REMOTECMD}" ]
+then
+{
+	echo "No remote command specified - exiting."
+	exit 1
+}
+fi
+
+# if SSHUSER wasn't given on the command line, use `whoami`
+if [ -z ${SSHUSER} ]
+then
+{
+	SSHUSER=`whoami`
+}
+fi
+
+# if OUTPATH wasn't given on the command line, use ~/
+if [ -z ${OUTPATH} ]
+then
+{
+	OUTPATH="~/widgetfile"
+}
+fi
 
 # set the line/string to be replaced
-OLD="widget_type X"
+if [ -z "${OLD}" ]
+then
+{
+	# default for the sake of this script
+	OLD="widget_type X"
+	# default if I were going to expand this further
+	#OLD="#DEPLOYREPLACE"
+}
+fi
+	
+############ DEPRECATED ###########
+
+#TEMPLATE="template.file"
+#HOMEDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+#FILE="$HOMEDIR/$TEMPLATE"
+
+#if [ ! -r "$FILE" ]
+#then
+#{
+#	echo "Failed to read template file - exiting"
+#	exit 1
+#}
+#fi
+
+# variablize the file, because reasons.
+#CONTENTS=$( < "$FILE" )
+
 
 # get hostnames from command line of deploy.sh to conect too
-HOSTNAMES=( "$@")
+#HOSTNAMES=( "$@")
+
+################################
+
 
 # we need to report counts of successful vs failed.  We will create two
 # empty arrays and populate them with data based on the success of the 
@@ -62,23 +199,19 @@ HOSTNAMES=( "$@")
 PASS=()
 FAIL=()
 
-for i in "${HOSTNAMES[@]}"
+for i in ${HOSTNAMES}
 do
 	echo "Deploying On $i ..."
-	REPLACE="$(ssh  $i "${REMOTECMD}" 2>/dev/null)"
+	REPLACE="$(ssh  $SSHUSER@$i "${REMOTECMD}" 2>/dev/null)"
 	
 	# ssh is brilliant, and return code of the local ssh command will 
 	# be the return code of the remote command.  Bless you ssh.
 
 	# 3) Now that we know we can connect, and we have the remote hosts's
-	# value from facter -p widget, we can start to alter the CONTENTS
+	# value from REMOTECMD, we can start to alter the CONTENTS
 	# variable to be in line with our remote target's configuration.
 
-	# First things first - lets make sure facter -p widget returned 
-	# *something* -- heavy valid response checking could go here 
-	# at a later date - but for now, facter's output is pretty simple
-	# if it returns a valid exit code, we'll assume either "all is well"
-	# or it could be an empty value ( widget option not set ).  This 
+	# Bit of work to validate the REMOTECMD output.  This 
 	# is the reason we make two connections via ssh - this can later be 
 	# streamlined into one connection with a longer commaned past 
 	# to the remote system. But I have other code to write.
@@ -90,7 +223,7 @@ do
 		if [[ -z $REPLACE ]]
 		then
 		{
-			#DEBUG echo "Invalid facter value from $i"
+			#DEBUG echo "Invalid REMOTECMD value from $i"
 			FAIL+=("$i")
 			continue
 		}
@@ -98,14 +231,29 @@ do
 		
 		# Build a variable to hold our remote hosts correct 
 		# config file.
-
-		WIDGETFILE=$(echo "${CONTENTS}" | 
-		sed  "s/${OLD}/widget_type\ ${REPLACE}/")
 		
+		# If -b or -a were given on the command line, this
+		# will add them to the -c output
+		REPLACE=${BEFORE}${REPLACE}${AFTER}
+		
+		WIDGETFILE=$(echo "${CONTENTS}" | 
+		sed  "s/${OLD}/${REPLACE}/")
+		
+		# if the REMOTECMD output doesn't play 
+		# friendly with sed - then we want to fail and 
+		# continue the loop
+		if [ $? -ne 0 ]
+		then
+		{
+			FAIL+=("$i")
+			continue
+		}
+		fi
+
 		# and finally place the updated file values on the 
 		# remote host.
 
-		ssh $i "echo \"${WIDGETFILE}\" > /etc/widgetfile"
+		ssh $SSHUSER@$i "echo \"${WIDGETFILE}\" > ${OUTPATH}"
 
 		if [ $? -eq 0 ] 
 		then
@@ -123,7 +271,7 @@ do
 	}
 	else
 	{
-		#DEBUG echo "failed to conenct OR run facter on $i"
+		#DEBUG echo "failed to conenct OR run REMOTECMD on $i"
 		FAIL+=("$i")
 		continue
 	}
